@@ -58,14 +58,3 @@ Once the repository is cloned on your local machine, we must execute the program
 cd mammo-echo-thermo
 python -m pip install -r requirements.txt
 ```
-
-## Run program
-To run the program you must launch the command `python src/main.py`. This programa accepts different arguments, to see these you have to launch `--help`.
-
-Available arguments:
-* `-h, --help` Show a help message and exit.
-
-Execution command example:
-```
-python src/main.py --help
-```
