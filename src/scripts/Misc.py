@@ -1,4 +1,3 @@
-from abc import abstractmethod
 import tensorflow as tf
 
 class computer:
