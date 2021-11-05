@@ -1,4 +1,5 @@
 import tensorflow as tf
+import os
 
 class computer:
 	# This function checks if the model is running on the CPU or GPU
@@ -11,3 +12,7 @@ class computer:
 			print("\nCannot run model on GPU. Do you want to run it with the CPU? [Y/N]: ")
 			if input().upper() != "Y":
 				raise SystemExit("Execution of the model has been canceled!")
+
+	def create_output_folder():
+		if not os.path.exists("output"):
+			os.makedirs("output")
