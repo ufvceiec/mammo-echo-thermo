@@ -1,12 +1,15 @@
 import os
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn import model_selection
+from keras import preprocessing
 
 class Data:
 	def __init__(self, path):
 		self.images = self.__extract_images(path)
 		self.images.category, self.labels = self.images.category.factorize()
+		self.images.category = self.images.category.astype(str)
 		self.training, self.test = None, None
 
 	def train_test_split(self, test_size=0.15, shuffle=True, stratify=False):
@@ -24,7 +27,55 @@ class Data:
 		print(f"{name}: {amount} {np.round(amount/len(data), 2)}")
 
 	def image_generator(self):
-		pass
+		train_datagen = preprocessing.image.ImageDataGenerator(rescale=1./255, validation_split=0.2)
+		test_datagen = preprocessing.image.ImageDataGenerator(rescale=1./255)
+
+		generator_properties = {
+			"x_col": "image",
+			"y_col": "category",
+			"target_size": (215, 538),
+			"color_mode": "rgb",
+			"class_mode": "binary"
+		}
+
+		train_generator = train_datagen.flow_from_dataframe(
+			**generator_properties,
+
+			dataframe=self.training,
+			batch_size=25,
+			subset="training"
+		)
+
+		validation_generator = train_datagen.flow_from_dataframe(
+			**generator_properties,
+
+			dataframe=self.training,
+			batch_size=25,
+			subset="validation"
+		)
+
+		test_generator = test_datagen.flow_from_dataframe(
+			**generator_properties,
+
+			dataframe=self.test,
+			batch_size=1
+		)
+
+		return train_generator, validation_generator, test_generator
+
+	def show_images(self, generator, name):
+		fig, ax = plt.subplots(nrows=3, ncols=1, constrained_layout=True)
+
+		img, label = generator.next()
+
+		for i in range(3):
+			ax[i].imshow(img[i])
+			ax[i].title.set_text(str(self.labels[int(label[i])]).title())
+			ax[i].axis("off")
+
+		fig.suptitle(name)
+			
+		plt.show()
 
 	def __extract_images(self, path):
 		images = []
