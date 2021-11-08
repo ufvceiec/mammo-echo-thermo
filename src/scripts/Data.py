@@ -36,7 +36,7 @@ class Data:
 			"y_col": "category",
 			"target_size": (215, 538),
 			"color_mode": "rgb",
-			"class_mode": "binary"
+			"class_mode": "categorical"
 		}
 
 		train_generator = train_datagen.flow_from_dataframe(
@@ -71,7 +71,7 @@ class Data:
 
 		for i in range(3):
 			ax[i].imshow(img[i])
-			ax[i].title.set_text(str(self.labels[int(label[i])]).title())
+			ax[i].title.set_text(str(self.labels[np.argmax(label[i], axis=-1)]).title())
 			ax[i].axis("off")
 
 		fig.suptitle(name)
