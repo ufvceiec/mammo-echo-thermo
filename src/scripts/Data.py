@@ -27,7 +27,7 @@ class Data:
 		
 		print(f"{name}: {amount} {np.round(amount/len(data), 2)}")
 
-	def image_generator(self):
+	def image_generator(self, shuffle=True):
 		train_datagen = preprocessing.image.ImageDataGenerator(rescale=1./255, validation_split=0.2)
 		test_datagen = preprocessing.image.ImageDataGenerator(rescale=1./255)
 
@@ -44,7 +44,7 @@ class Data:
 
 			dataframe=self.training,
 			batch_size=25,
-			shuffle=True,
+			shuffle=shuffle,
 			subset="training"
 		)
 
@@ -53,7 +53,7 @@ class Data:
 
 			dataframe=self.training,
 			batch_size=25,
-			shuffle=True,
+			shuffle=shuffle,
 			subset="validation"
 		)
 
