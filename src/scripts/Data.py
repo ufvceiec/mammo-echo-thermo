@@ -67,19 +67,31 @@ class Data:
 
 		return train_generator, validation_generator, test_generator
 
-	def show_images(self, generator, name):
-		fig, ax = plt.subplots(nrows=3, ncols=1, constrained_layout=True)
+	def show_images(self, generator, filters, name):
+		generator.reset()
 
 		img, label = generator.next()
 
-		for i in range(3):
-			ax[i].imshow(img[i])
-			ax[i].title.set_text(str(self.labels[np.argmax(label[i], axis=-1)]).title())
-			ax[i].axis("off")
-
+		fig, axs = plt.subplots(nrows=3, ncols=1, constrained_layout=True)
 		fig.suptitle(name)
-			
-		plt.show()
+
+		for ax in axs:
+			ax.remove()
+
+		gridspec = axs[0].get_subplotspec().get_gridspec()
+		subfigs = [fig.add_subfigure(gs) for gs in gridspec]
+
+		for row, subfig in enumerate(subfigs):
+			subfig.suptitle(str(self.labels[np.argmax(label[row], axis=-1)]).title())
+
+			axs = subfig.subplots(nrows=1, ncols=4)
+
+			for col, ax in enumerate(axs):
+				ax.imshow(list(filters.values())[col](img[row]))
+				ax.set_title(list(filters)[col].title())
+				ax.axis("off")
+				
+				ax.plot()
 
 	def __extract_images(self, path):
 		images = []
