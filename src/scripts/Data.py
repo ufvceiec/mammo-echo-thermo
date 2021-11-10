@@ -44,6 +44,7 @@ class Data:
 
 			dataframe=self.training,
 			batch_size=25,
+			shuffle=True,
 			subset="training"
 		)
 
@@ -52,6 +53,7 @@ class Data:
 
 			dataframe=self.training,
 			batch_size=25,
+			shuffle=True,
 			subset="validation"
 		)
 
@@ -59,7 +61,8 @@ class Data:
 			**generator_properties,
 
 			dataframe=self.test,
-			batch_size=1
+			batch_size=1,
+			shuffle=False
 		)
 
 		return train_generator, validation_generator, test_generator

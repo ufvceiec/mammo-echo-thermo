@@ -89,7 +89,7 @@ class Model:
 		FN = cm[1][0]
 
 		accuracy = (float(TP + TN) / float(TP + TN + FP + FN))
-		print("Accuracy:", round(accuracy,4))
+		print("Accuracy:", round(accuracy, 4))
 
 		specificity = (TN / float(TN + FP))
 		print("Specificity:", round(specificity, 4))
@@ -119,7 +119,7 @@ class Model:
 		plt.show()
 
 	def __compute_heatmap(self, image):
-		last_layer = self.model.get_layer("conv2d_3")
+		last_layer = self.model.get_layer(index=2)
 
 		grad_model = models.Model(inputs=[self.model.input], outputs=[last_layer.output, self.model.output])
 
