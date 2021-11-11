@@ -9,8 +9,8 @@ from tensorflow.keras import optimizers
 from .Misc import *
 
 class Model:
-	def __init__(self, name, summary=True, plot=True):
-		self.model = self.__create_model()
+	def __init__(self, name, filter, summary=True, plot=True):
+		self.model = self.__create_model(filter)
 		self.name = name
 
 		if summary:
@@ -22,12 +22,16 @@ class Model:
 			utils.vis_utils.plot_model(self.model, to_file=f"./output/{self.name}_model.png", show_shapes=True, show_layer_names=True)
 
 			plt.imshow(plt.imread(f"./output/{self.name}_model.png"))
-			plt.show()		
+			plt.axis("off")
 
-	def __create_model(self):
+			plt.show()
+
+	def __create_model(self, filter):
 		model = models.Sequential()
 
-		model.add(layers.Conv2D(32, (3, 3), input_shape=(215, 538, 3), activation="relu"))
+		model.add(layers.Lambda(filter, input_shape=(215, 538, 3)))
+
+		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))

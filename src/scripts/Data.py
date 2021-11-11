@@ -87,7 +87,7 @@ class Data:
 			axs = subfig.subplots(nrows=1, ncols=4)
 
 			for col, ax in enumerate(axs):
-				ax.imshow(list(filters.values())[col](img[row]))
+				ax.imshow(list(filters.values())[col](img[row][np.newaxis, ...])[0])
 				ax.set_title(list(filters)[col].title())
 				ax.axis("off")
 				
