@@ -10,26 +10,29 @@ from .Misc import *
 
 class Model:
 	def __init__(self, name, filter, summary=True, plot=True):
-		self.model = self.__create_model(filter)
 		self.name = name
+		self.filter = filter
+		self.model = self.__create_model()
+		self.weigths_path = f"./output/{self.name}/weigths_" + "{epoch:03d}" + ".hdf5"
+		self.best_epoch = 0
+
+		computer.create_output_folder(self.name)
+		
+		utils.vis_utils.plot_model(self.model, to_file=f"./output/{self.name}/model.png", show_shapes=True, show_layer_names=True)
 
 		if summary:
 			self.model.summary()
 
 		if plot:
-			computer.create_output_folder()
-
-			utils.vis_utils.plot_model(self.model, to_file=f"./output/{self.name}_model.png", show_shapes=True, show_layer_names=True)
-
-			plt.imshow(plt.imread(f"./output/{self.name}_model.png"))
+			plt.imshow(plt.imread(f"./output/{self.name}/model.png"))
 			plt.axis("off")
 
 			plt.show()
 
-	def __create_model(self, filter):
+	def __create_model(self):
 		model = models.Sequential()
 
-		model.add(layers.Lambda(filter, input_shape=(215, 538, 3)))
+		model.add(layers.Lambda(self.filter, input_shape=(215, 538, 3)))
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))
@@ -47,13 +50,50 @@ class Model:
 	def compile(self):
 		self.model.compile(loss=losses.binary_crossentropy, optimizer=optimizers.Adam(learning_rate=5*10e-4), metrics=["accuracy"])
 
-		with open(f"./output/{self.name}_model.json", "w") as json_file:
+		with open(f"./output/{self.name}/model.json", "w") as json_file:
 			json_file.write(self.model.to_json())
 
-	def fit(self, train_generator, validation_generator, epochs, plot=True):
-		checkpoint = callbacks.ModelCheckpoint(f"./output/{self.name}_weigth.hdf5", monitor="val_accuracy", verbose=1, save_best_only=True, mode="max")
+	def fit(self, train_generator, validation_generator, epochs, verbose=True, plot=True):
+		class GetProgress(callbacks.Callback):
+			def __init__(self, name, weigths_path):
+				self.name = name
+				self.weigths_path = weigths_path
+				self.best_accuracy = 0
+				self.best_epoch = 0
 
-		history = self.model.fit(train_generator, epochs=epochs, validation_data=validation_generator, callbacks=[checkpoint])
+			def on_epoch_begin(self, epoch, logs=None):
+				print(f"\rModel {self.name} -> Epoch {epoch + 1}/{epochs} -> {self.weigths_path.format(epoch=self.best_epoch + 1)}", end="")
+
+				if epoch + 1 >= epochs:
+					print("\n", end="")
+
+			def on_epoch_end(self, epoch, logs=None):
+				if logs["val_accuracy"] > self.best_accuracy:
+					self.best_accuracy = logs["val_accuracy"]
+					self.best_epoch = epoch
+
+		checkpoint = callbacks.ModelCheckpoint(
+			self.weigths_path,
+			monitor="val_accuracy",
+			verbose=1 if verbose else 0,
+			save_best_only=True,
+			mode="max"
+		)
+
+		get_progress = GetProgress(self.name, self.weigths_path)
+
+		history = self.model.fit(
+			train_generator,
+			epochs=epochs,
+			verbose=1 if verbose else 0,
+			validation_data=validation_generator,
+			callbacks=[
+				checkpoint,
+				get_progress if ~verbose else []
+			]
+		)
+
+		self.best_epoch = get_progress.best_epoch
 
 		if plot:
 			plt.style.use("ggplot")
@@ -73,7 +113,7 @@ class Model:
 			plt.show()
 
 	def load_model(self):
-		self.model = models.load_model(f"./output/{self.name}_weigth.hdf5")
+		self.model = models.load_model(self.weigths_path)
 
 	def evaluate(self, predict, best_model=True):
 		if best_model:

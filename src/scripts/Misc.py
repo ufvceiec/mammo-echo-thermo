@@ -13,6 +13,9 @@ class computer:
 			if input().upper() != "Y":
 				raise SystemExit("Execution of the model has been canceled!")
 
-	def create_output_folder():
+	def create_output_folder(subfolder):
 		if not os.path.exists("output"):
 			os.makedirs("output")
+
+		if not os.path.exists("output/" + subfolder):
+			os.makedirs("output/" + subfolder)
