@@ -13,7 +13,7 @@ class Model:
 		self.name = name
 		self.filter = filter
 		self.model = self.__create_model()
-		self.weigths_path = f"./output/{self.name}/weigths_" + "{epoch:03d}" + ".hdf5"
+		self.weights_path = f"./output/{self.name}/weights_" + "{epoch:03d}" + ".hdf5"
 		self.best_epoch = 0
 
 		computer.create_output_folder(self.name, new)
@@ -55,9 +55,9 @@ class Model:
 
 	def fit(self, train_generator, validation_generator, epochs, verbose=True, plot=True):
 		class GetProgress(callbacks.Callback):
-			def __init__(self, name, weigths_path):
+			def __init__(self, name, weights_path):
 				self.name = name
-				self.weigths_path = weigths_path
+				self.weights_path = weights_path
 				self.best_accuracy = 0
 				self.best_epoch = 0
 
@@ -70,22 +70,21 @@ class Model:
 					f"\rModel {self.name} -> " +
 					f"Epoch {epoch + 1}/{epochs} -> " +
 					f"Accuracy: {round(logs['val_accuracy'], 2)} -> " +
-					f"Weigth: {round(self.weigth, 2)} -> " +
-					f"{self.weigths_path.format(epoch=self.best_epoch + 1)}"
+					f"{self.weights_path.format(epoch=self.best_epoch + 1)}"
 				, end="")
 
 				if epoch + 1 >= epochs:
 					print("\n", end="")
 
 		checkpoint = callbacks.ModelCheckpoint(
-			self.weigths_path,
+			self.weights_path,
 			monitor="val_accuracy",
 			verbose=1 if verbose else 0,
 			save_best_only=True,
 			mode="max"
 		)
 
-		get_progress = GetProgress(self.name, self.weigths_path)
+		get_progress = GetProgress(self.name, self.weights_path)
 
 		history = self.model.fit(
 			train_generator,
@@ -118,7 +117,7 @@ class Model:
 			plt.show()
 
 	def load_model(self, path=None):
-		self.model = models.load_model(self.weigths_path.format(epoch=self.best_epoch + 1) if path is None else path)
+		self.model = models.load_model(self.weights_path.format(epoch=self.best_epoch + 1) if path is None else path)
 
 	def evaluate(self, predict, best_model=True, path=None):
 		if best_model:
