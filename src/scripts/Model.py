@@ -9,14 +9,14 @@ from tensorflow.keras import optimizers
 from .Misc import *
 
 class Model:
-	def __init__(self, name, filter, summary=True, plot=True):
+	def __init__(self, name, filter, new=True, summary=True, plot=True):
 		self.name = name
 		self.filter = filter
 		self.model = self.__create_model()
 		self.weigths_path = f"./output/{self.name}/weigths_" + "{epoch:03d}" + ".hdf5"
 		self.best_epoch = 0
 
-		computer.create_output_folder(self.name)
+		computer.create_output_folder(self.name, new)
 		
 		utils.vis_utils.plot_model(self.model, to_file=f"./output/{self.name}/model.png", show_shapes=True, show_layer_names=True)
 
@@ -61,16 +61,21 @@ class Model:
 				self.best_accuracy = 0
 				self.best_epoch = 0
 
-			def on_epoch_begin(self, epoch, logs=None):
-				print(f"\rModel {self.name} -> Epoch {epoch + 1}/{epochs} -> {self.weigths_path.format(epoch=self.best_epoch + 1)}", end="")
-
-				if epoch + 1 >= epochs:
-					print("\n", end="")
-
 			def on_epoch_end(self, epoch, logs=None):
 				if logs["val_accuracy"] > self.best_accuracy:
 					self.best_accuracy = logs["val_accuracy"]
 					self.best_epoch = epoch
+
+				print(
+					f"\rModel {self.name} -> " +
+					f"Epoch {epoch + 1}/{epochs} -> " +
+					f"Accuracy: {round(logs['val_accuracy'], 2)} -> " +
+					f"Weigth: {round(self.weigth, 2)} -> " +
+					f"{self.weigths_path.format(epoch=self.best_epoch + 1)}"
+				, end="")
+
+				if epoch + 1 >= epochs:
+					print("\n", end="")
 
 		checkpoint = callbacks.ModelCheckpoint(
 			self.weigths_path,
@@ -89,7 +94,7 @@ class Model:
 			validation_data=validation_generator,
 			callbacks=[
 				checkpoint,
-				get_progress if ~verbose else []
+				get_progress
 			]
 		)
 
@@ -112,12 +117,12 @@ class Model:
 
 			plt.show()
 
-	def load_model(self):
-		self.model = models.load_model(self.weigths_path)
+	def load_model(self, path=None):
+		self.model = models.load_model(self.weigths_path.format(epoch=self.best_epoch + 1) if path is None else path)
 
-	def evaluate(self, predict, best_model=True):
+	def evaluate(self, predict, best_model=True, path=None):
 		if best_model:
-			self.load_model()
+			self.load_model(path)
 
 		predictions = np.argmax(self.model.predict(predict), axis=-1)
 		cm = metrics.confusion_matrix(predict.classes, predictions)
@@ -162,7 +167,7 @@ class Model:
 
 		plt.show()
 
-	def __compute_heatmap(self, image):
+	def compute_heatmap(self, image):
 		last_layer = self.model.get_layer(index=2)
 
 		grad_model = models.Model(inputs=[self.model.input], outputs=[last_layer.output, self.model.output])
@@ -179,7 +184,7 @@ class Model:
 
 		return heatmap.numpy()
 
-	def __get_heatmap(self, path, heatmap):
+	def get_heatmap(self, path, heatmap):
 		img = preprocessing.image.load_img(path, color_mode="grayscale")
 		img = preprocessing.image.img_to_array(img)
 

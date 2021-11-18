@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os
+import shutil
 
 class computer:
 	# This function checks if the model is running on the CPU or GPU
@@ -13,7 +14,10 @@ class computer:
 			if input().upper() != "Y":
 				raise SystemExit("Execution of the model has been canceled!")
 
-	def create_output_folder(subfolder):
+	def create_output_folder(subfolder, new=True):
+		if new and os.path.exists("output/" + subfolder):
+			shutil.rmtree("output/" + subfolder)
+
 		if not os.path.exists("output"):
 			os.makedirs("output")
 
