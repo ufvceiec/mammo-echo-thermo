@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import cv2 as cv
 import matplotlib.pyplot as plt
 from sklearn import model_selection
 from keras import preprocessing
@@ -43,7 +44,7 @@ class Data:
 			**generator_properties,
 
 			dataframe=self.training,
-			batch_size=25,
+			batch_size=10,
 			shuffle=shuffle,
 			subset="training"
 		)
@@ -52,7 +53,7 @@ class Data:
 			**generator_properties,
 
 			dataframe=self.training,
-			batch_size=25,
+			batch_size=10,
 			shuffle=shuffle,
 			subset="validation"
 		)
@@ -66,6 +67,29 @@ class Data:
 		)
 
 		return train_generator, validation_generator, test_generator
+
+	def detectColor(self, image, lower, upper):
+		if tf.is_tensor(image):
+			temp_image = image.numpy().copy()
+		else:
+			temp_image = image.copy()
+
+		hsv_image = temp_image.copy()
+		hsv_image = cv.cvtColor(hsv_image, cv.COLOR_RGB2HSV)
+		mask = cv.inRange(hsv_image, lower, upper)
+
+		result = temp_image.copy()
+		result[np.where(mask == 0)] = 0
+		
+		return result
+
+	def getImageTensor(self, images, lower, upper):
+		results = []
+
+		for img in images:
+			results.append(np.expand_dims(self.detectColor(img, lower, upper), axis=0))
+
+		return np.concatenate(results, axis=0)
 
 	def show_images(self, generator, filters, name):
 		generator.reset()
@@ -87,7 +111,7 @@ class Data:
 			axs = subfig.subplots(nrows=1, ncols=4)
 
 			for col, ax in enumerate(axs):
-				ax.imshow(list(filters.values())[col](img[row][np.newaxis, ...])[0])
+				ax.imshow(list(filters.values())[col](img)[row])
 				ax.set_title(list(filters)[col].title())
 				ax.axis("off")
 				

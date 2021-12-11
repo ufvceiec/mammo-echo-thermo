@@ -1,9 +1,10 @@
+from logging import Filter
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 import cv2 as cv
 import tensorflow as tf
-from keras import callbacks, models, layers, utils, losses, preprocessing
+from keras import callbacks, models, layers, utils, losses, preprocessing, backend
 from sklearn import metrics
 from tensorflow.keras import optimizers
 from .Misc import *
@@ -30,9 +31,27 @@ class Model:
 			plt.show()
 
 	def __create_model(self):
+		class FilterLayer(layers.Layer):
+			def __init__(self, filter, **kwargs):
+				self.filter = filter
+
+				super(FilterLayer, self).__init__(name="filter_layer", **kwargs)
+
+			def call(self, image):
+				shape = image.shape
+				[image, ] = tf.py_function(self.filter, [image], [tf.float32])
+				image = backend.stop_gradient(image)
+				image.set_shape(shape)
+				
+				return image
+
+			def get_config(self):
+				return super().get_config()
+
 		model = models.Sequential()
 
-		model.add(layers.Lambda(self.filter, input_shape=(215, 538, 3)))
+		model.add(layers.Input(shape=(215, 538, 3)))
+		model.add(FilterLayer(filter=self.filter))
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))
@@ -47,7 +66,7 @@ class Model:
 
 		return model
 
-	def compile(self):
+	def compile(self):		
 		self.model.compile(loss=losses.binary_crossentropy, optimizer=optimizers.Adam(learning_rate=5*10e-4), metrics=["accuracy"])
 
 		with open(f"./output/{self.name}/model.json", "w") as json_file:
@@ -69,7 +88,7 @@ class Model:
 				print(
 					f"\rModel {self.name} -> " +
 					f"Epoch {epoch + 1}/{epochs} -> " +
-					f"Accuracy: {round(logs['val_accuracy'], 2)} -> " +
+					f"Accuracy (Validation): {round(logs['val_accuracy'], 2)} -> " +
 					f"{self.weights_path.format(epoch=self.best_epoch + 1)}"
 				, end="")
 
@@ -119,8 +138,8 @@ class Model:
 	def load_model(self, path=None):
 		self.model = models.load_model(self.weights_path.format(epoch=self.best_epoch + 1) if path is None else path)
 
-	def evaluate(self, predict, best_model=True, path=None):
-		if best_model:
+	def evaluate(self, predict, path=None):
+		if path is not None:
 			self.load_model(path)
 
 		predictions = np.argmax(self.model.predict(predict), axis=-1)
