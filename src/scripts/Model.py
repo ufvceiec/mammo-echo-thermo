@@ -15,7 +15,6 @@ class Model:
 		self.filter = filter
 		self.model = self.__create_model()
 		self.weights_path = f"./output/{self.name}/weights_" + "{epoch:03d}" + ".hdf5"
-		self.best_epoch = 0
 
 		computer.create_output_folder(self.name, new)
 		
@@ -31,27 +30,10 @@ class Model:
 			plt.show()
 
 	def __create_model(self):
-		class FilterLayer(layers.Layer):
-			def __init__(self, filter, **kwargs):
-				self.filter = filter
-
-				super(FilterLayer, self).__init__(name="filter_layer", **kwargs)
-
-			def call(self, image):
-				shape = image.shape
-				[image, ] = tf.py_function(self.filter, [image], [tf.float32])
-				image = backend.stop_gradient(image)
-				image.set_shape(shape)
-				
-				return image
-
-			def get_config(self):
-				return super().get_config()
-
 		model = models.Sequential()
 
 		model.add(layers.Input(shape=(215, 538, 3)))
-		model.add(FilterLayer(filter=self.filter))
+		model.add(FilterLayer(filter=self.filter, name="filter_layer"))
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))
@@ -83,13 +65,14 @@ class Model:
 			def on_epoch_end(self, epoch, logs=None):
 				if logs["val_accuracy"] > self.best_accuracy:
 					self.best_accuracy = logs["val_accuracy"]
-					self.best_epoch = epoch
+					self.best_epoch = epoch + 1
+					computer.duplicate_file(self.weights_path.format(epoch=self.best_epoch), f"./output/{self.name}/best_model.hdf5")
 
 				print(
 					f"\rModel {self.name} -> " +
 					f"Epoch {epoch + 1}/{epochs} -> " +
 					f"Accuracy (Validation): {round(logs['val_accuracy'], 2)} -> " +
-					f"{self.weights_path.format(epoch=self.best_epoch + 1)}"
+					f"{self.weights_path.format(epoch=self.best_epoch)}"
 				, end="")
 
 				if epoch + 1 >= epochs:
@@ -116,8 +99,6 @@ class Model:
 			]
 		)
 
-		self.best_epoch = get_progress.best_epoch
-
 		if plot:
 			plt.style.use("ggplot")
 
@@ -136,11 +117,10 @@ class Model:
 			plt.show()
 
 	def load_model(self, path=None):
-		self.model = models.load_model(self.weights_path.format(epoch=self.best_epoch + 1) if path is None else path)
+		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)
 
 	def evaluate(self, predict, path=None):
-		if path is not None:
-			self.load_model(path)
+		self.load_model(path)
 
 		predictions = np.argmax(self.model.predict(predict), axis=-1)
 		cm = metrics.confusion_matrix(predict.classes, predictions)
@@ -218,3 +198,23 @@ class Model:
 		superimposed_img = preprocessing.image.array_to_img(superimposed_img)
 
 		return jet_heatmap, superimposed_img
+
+class FilterLayer(layers.Layer):
+	def __init__(self, filter, name="filter_layer", **kwargs):
+		self.filter = filter
+
+		super(FilterLayer, self).__init__(name=name, **kwargs)
+
+	def call(self, image):
+		shape = image.shape
+		[image, ] = tf.py_function(self.filter, [image], [tf.float32])
+		image = backend.stop_gradient(image) # REVIEW: Comprobar que la función stop_gradient nos viene bien
+		image.set_shape(shape)
+		
+		return image
+
+	def get_config(self):
+		config = super(FilterLayer, self).get_config()
+		config.update({"filter": self.filter})
+		
+		return config

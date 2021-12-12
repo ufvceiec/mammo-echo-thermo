@@ -1,3 +1,4 @@
+from copy import copy
 import tensorflow as tf
 import os
 import shutil
@@ -23,3 +24,6 @@ class computer:
 
 		if not os.path.exists("output/" + subfolder):
 			os.makedirs("output/" + subfolder)
+
+	def duplicate_file(source, destination):
+		shutil.copy(source, destination)
