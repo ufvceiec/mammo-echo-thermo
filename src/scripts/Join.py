@@ -42,7 +42,7 @@ class Join():
 			ax[2].axis("off")
 			
 			ax[3].imshow(superimposed_img)
-			ax[3].set_title(f"Predicted: {np.argmax(predicted)}", color="g" if np.argmax(predicted) == int(image.category) else "r")
+			ax[3].set_title(f"Predicted: {np.argmax(predicted)}", color="g" if np.argmax(predicted).astype(str) == image.category else "r")
 			ax[3].axis("off")
 
 		plt.show()
