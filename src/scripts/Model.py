@@ -208,7 +208,7 @@ class FilterLayer(layers.Layer):
 	def call(self, image):
 		shape = image.shape
 		[image, ] = tf.py_function(self.filter, [image], [tf.float32])
-		image = backend.stop_gradient(image) # REVIEW: Comprobar que la función stop_gradient nos viene bien
+		image = backend.stop_gradient(image) # REVIEW: Check if the this function works well
 		image.set_shape(shape)
 		
 		return image
