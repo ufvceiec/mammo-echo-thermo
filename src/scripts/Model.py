@@ -32,8 +32,7 @@ class Model:
 	def __create_model(self):
 		model = models.Sequential()
 
-		model.add(layers.Input(shape=(215, 538, 3)))
-		model.add(FilterLayer(filter=self.filter, name="filter_layer"))
+		model.add(FilterLayer(filter=self.filter, name="filter_layer", input_shape=(215, 538, 3), trainable=False))
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))
@@ -43,6 +42,7 @@ class Model:
 
 		model.add(layers.Dropout(rate=0.4))
 		model.add(layers.Dense(32, activation="relu"))
+		
 		model.add(layers.Dropout(rate=0.4))
 		model.add(layers.Dense(2, activation="softmax"))
 
@@ -208,7 +208,6 @@ class FilterLayer(layers.Layer):
 	def call(self, image):
 		shape = image.shape
 		[image, ] = tf.py_function(self.filter, [image], [tf.float32])
-		image = backend.stop_gradient(image) # REVIEW: Check if the this function works well
 		image.set_shape(shape)
 		
 		return image
