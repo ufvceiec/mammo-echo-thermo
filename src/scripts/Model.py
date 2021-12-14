@@ -71,7 +71,7 @@ class Model:
 				print(
 					f"\rModel {self.name} -> " +
 					f"Epoch {epoch + 1}/{epochs} -> " +
-					f"Accuracy (Validation): {round(logs['val_accuracy'], 2)} -> " +
+					f"Accuracy (Validation): {round(logs['val_accuracy'], 2)} (Best: {round(self.best_accuracy, 2)}) -> " +
 					f"{self.weights_path.format(epoch=self.best_epoch)}"
 				, end="")
 
