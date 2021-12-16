@@ -14,11 +14,11 @@ class Data:
 		self.images.category = self.images.category.astype(str)
 		self.training, self.test = None, None
 
-	def train_test_split(self, test_size=0.15, shuffle=True, stratify=False):
+	def train_test_split(self, test_size=0.15, random_state=42, shuffle=True, stratify=False):
 		return model_selection.train_test_split(
 			self.images,
 			test_size=test_size,
-			random_state=42,
+			random_state=random_state,
 			shuffle=shuffle,
 			stratify=self.images.category if stratify else None
 		)
