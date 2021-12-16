@@ -7,9 +7,9 @@ class Join():
 	def __init__(self, *models):
 		self.models = models
 
-	def visualize_heatmap(self, image):
+	def visualize_heatmap(self, image, threshold=0.8):
 		fig, model_rows = plt.subplots(nrows=len(self.models), ncols=1, constrained_layout=True)
-		fig.suptitle(f"Image: {image.image}, Class: {image.category}")
+		fig.suptitle(f"Image: {image.image}, Class: {image.category}\nThreshold: {threshold}")
 
 		for model_row in model_rows:
 			model_row.remove()
@@ -24,6 +24,7 @@ class Join():
 			heatmap = self.models[row].compute_heatmap(img)
 			jet_heatmap, superimposed_img = self.models[row].get_heatmap(image.image, heatmap)
 			predicted = self.models[row].model.predict(img)[0]
+			predicted_class = (lambda x: 1 if x[1] >= threshold else 0)(predicted)
 
 			model_row.suptitle(f"Model: {self.models[row].name.title()}")
 
@@ -40,9 +41,9 @@ class Join():
 			ax[2].imshow(preprocessing.image.array_to_img(jet_heatmap))
 			ax[2].set_title(np.round(predicted, 2))
 			ax[2].axis("off")
-			
+
 			ax[3].imshow(superimposed_img)
-			ax[3].set_title(f"Predicted: {np.argmax(predicted)}", color="g" if np.argmax(predicted).astype(str) == image.category else "r")
+			ax[3].set_title(f"Predicted: {predicted_class}", color="g" if str(predicted_class) == image.category else "r")
 			ax[3].axis("off")
 
 		plt.show()

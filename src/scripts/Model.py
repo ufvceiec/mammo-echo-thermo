@@ -4,7 +4,7 @@ import matplotlib.cm as cm
 import numpy as np
 import cv2 as cv
 import tensorflow as tf
-from keras import callbacks, models, layers, utils, losses, preprocessing, backend
+from keras import callbacks, models, layers, utils, losses, preprocessing
 from sklearn import metrics
 from tensorflow.keras import optimizers
 from .Misc import *
@@ -48,7 +48,7 @@ class Model:
 
 		return model
 
-	def compile(self):		
+	def compile(self):
 		self.model.compile(loss=losses.binary_crossentropy, optimizer=optimizers.Adam(learning_rate=5*10e-4), metrics=["accuracy"])
 
 		with open(f"./output/{self.name}/model.json", "w") as json_file:
