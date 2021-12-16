@@ -119,10 +119,16 @@ class Model:
 	def load_model(self, path=None):
 		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)
 
-	def evaluate(self, predict, path=None):
+	def evaluate(self, predict, threshold=None, path=None):
 		self.load_model(path)
 
-		predictions = np.argmax(self.model.predict(predict), axis=-1)
+		predicted = self.model.predict(predict)
+
+		if threshold is None:
+			predictions = np.argmax(predicted, axis=-1)
+		else:
+			predictions = list(map((lambda x: 1 if x >= 0.8 else 0), predicted[:, 1]))
+
 		cm = metrics.confusion_matrix(predict.classes, predictions)
 		
 		metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(predict.labels)).plot(cmap=plt.cm.Blues, xticks_rotation=0)

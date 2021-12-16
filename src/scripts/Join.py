@@ -7,7 +7,7 @@ class Join():
 	def __init__(self, *models):
 		self.models = models
 
-	def visualize_heatmap(self, image, threshold=0.8):
+	def visualize_heatmap(self, image, threshold=None):
 		fig, model_rows = plt.subplots(nrows=len(self.models), ncols=1, constrained_layout=True)
 		fig.suptitle(f"Image: {image.image}, Class: {image.category}\nThreshold: {threshold}")
 
@@ -24,7 +24,11 @@ class Join():
 			heatmap = self.models[row].compute_heatmap(img)
 			jet_heatmap, superimposed_img = self.models[row].get_heatmap(image.image, heatmap)
 			predicted = self.models[row].model.predict(img)[0]
-			predicted_class = (lambda x: 1 if x[1] >= threshold else 0)(predicted)
+
+			if threshold is None:
+				predicted_class = np.argmax(predicted, axis=-1)
+			else:
+				predicted_class = (lambda x: 1 if x[1] >= threshold else 0)(predicted)
 
 			model_row.suptitle(f"Model: {self.models[row].name.title()}")
 
