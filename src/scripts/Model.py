@@ -7,6 +7,7 @@ import tensorflow as tf
 from keras import callbacks, models, layers, utils, losses, preprocessing, backend
 from sklearn import metrics
 from tensorflow.keras import optimizers
+from datetime import datetime
 from .Misc import *
 
 class Model:
@@ -61,6 +62,7 @@ class Model:
 				self.weights_path = weights_path
 				self.best_accuracy = 0
 				self.best_epoch = 0
+				self.start_time = datetime.now().timestamp()
 
 			def on_epoch_end(self, epoch, logs=None):
 				if logs["val_accuracy"] > self.best_accuracy:
@@ -77,6 +79,10 @@ class Model:
 
 				if epoch + 1 >= epochs:
 					print("\n", end="")
+
+			def on_train_end(self, logs=None):
+				print(f"Training finished in {datetime.now().timestamp() - self.start_time} seconds \n")
+				return super().on_train_end(logs=logs)
 
 		checkpoint = callbacks.ModelCheckpoint(
 			self.weights_path,
@@ -99,22 +105,26 @@ class Model:
 			]
 		)
 
-		if plot:
-			plt.style.use("ggplot")
+		plt.style.use("ggplot")
 
-			plt.figure()
+		fig = plt.figure()
 
-			plt.plot(history.history["loss"], label="Training loss")
-			plt.plot(history.history["val_loss"], label="Validation loss")
-			plt.plot(history.history["accuracy"], label="Training accuracy")
-			plt.plot(history.history["val_accuracy"], label="Validation accuracy")
+		plt.plot(history.history["loss"], label="Training loss")
+		plt.plot(history.history["val_loss"], label="Validation loss")
+		plt.plot(history.history["accuracy"], label="Training accuracy")
+		plt.plot(history.history["val_accuracy"], label="Validation accuracy")
 
-			plt.title("Training Loss and Accuracy")
-			plt.xlabel("Epoch #")
-			plt.ylabel("Loss/Accuracy")
-			plt.legend(loc="lower left")
+		plt.title("Training Loss and Accuracy")
+		plt.xlabel("Epoch #")
+		plt.ylabel("Loss/Accuracy")
+		plt.legend(loc="lower left")
 
-			plt.show()
+		plt.savefig(f"./output/{self.name}/training_loss_and_accuracy.png")
+
+		if plot == False:
+			plt.close(fig)
+		else:
+			plt.show(fig)
 
 	def load_model(self, path=None):
 		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)
@@ -126,6 +136,7 @@ class Model:
 		cm = metrics.confusion_matrix(predict.classes, predictions)
 		
 		metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(predict.labels)).plot(cmap=plt.cm.Blues, xticks_rotation=0)
+		plt.savefig(f"./output/{self.name}/confusion_matrix.png")
 		plt.show()
 
 		print(metrics.classification_report(predict.classes, predictions))
