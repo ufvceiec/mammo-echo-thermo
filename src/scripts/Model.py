@@ -17,7 +17,12 @@ class Model:
 		self.model = self.__create_model()
 		self.weights_path = f"./output/{self.name}/weights_" + "{epoch:03d}" + ".hdf5"
 
-		computer.create_output_folder(self.name, new)
+		computer.create_folder(f"./output/")
+		
+		if new == True:
+			computer.delete_folder(f"./output/{self.name}")
+
+		computer.create_folder(f"./output/{self.name}")
 		
 		utils.vis_utils.plot_model(self.model, to_file=f"./output/{self.name}/model.png", show_shapes=True, show_layer_names=True)
 
@@ -129,14 +134,17 @@ class Model:
 	def load_model(self, path=None):
 		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)
 
-	def evaluate(self, predict, path=None):
+	def evaluate(self, predict, name, path=None):
 		self.load_model(path)
 
 		predictions = np.argmax(self.model.predict(predict), axis=-1)
 		cm = metrics.confusion_matrix(predict.classes, predictions)
+
+		computer.delete_folder(f"./output/{self.name}/{name}")
+		computer.create_folder(f"./output/{self.name}/{name}")
 		
 		metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(predict.labels)).plot(cmap=plt.cm.Blues, xticks_rotation=0)
-		plt.savefig(f"./output/{self.name}/confusion_matrix.png")
+		plt.savefig(f"./output/{self.name}/{name}/confusion_matrix.png")
 		plt.show()
 
 		print(metrics.classification_report(predict.classes, predictions))
@@ -148,15 +156,19 @@ class Model:
 
 		accuracy = (float(TP + TN) / float(TP + TN + FP + FN))
 		print("Accuracy:", round(accuracy, 4))
+		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Accuracy: {round(accuracy, 4)}")
 
 		specificity = (TN / float(TN + FP))
 		print("Specificity:", round(specificity, 4))
+		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Specificity: {round(specificity, 4)}")
 
 		sensitivity = (TP / float(TP + FN))
 		print("Sensitivity:", round(sensitivity, 4))
+		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Sensitivity: {round(sensitivity, 4)}")
 
 		precision = (TP / float(TP + FP))
 		print("Precision:", round(precision, 4))
+		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Precision: {round(precision, 4)}")
 
 	def visualize_heatmap(self, image):
 		img = cv.cvtColor(cv.imread(image.image), cv.COLOR_BGR2RGB).astype("float32") * 1./255
