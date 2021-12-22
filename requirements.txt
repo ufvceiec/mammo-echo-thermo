@@ -5,3 +5,4 @@ scikit-learn
 keras
 tensorflow
 opencv-python
+pydot
