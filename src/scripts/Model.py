@@ -134,7 +134,7 @@ class Model:
 	def load_model(self, path=None):
 		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)
 
-	def evaluate(self, predict, name, path=None):
+	def evaluate(self, predict, name, plot=True, path=None):
 		self.load_model(path)
 
 		predictions = np.argmax(self.model.predict(predict), axis=-1)
@@ -142,10 +142,16 @@ class Model:
 
 		computer.delete_folder(f"./output/{self.name}/{name}")
 		computer.create_folder(f"./output/{self.name}/{name}")
+
+		fig = plt.figure()
 		
 		metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(predict.labels)).plot(cmap=plt.cm.Blues, xticks_rotation=0)
 		plt.savefig(f"./output/{self.name}/{name}/confusion_matrix.png")
-		plt.show()
+		
+		if plot == False:
+			plt.close(fig)
+		else:
+			plt.show(fig)
 
 		print(metrics.classification_report(predict.classes, predictions))
 
