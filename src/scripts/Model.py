@@ -1,10 +1,10 @@
-from logging import Filter
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 import cv2 as cv
+import pandas as pd
 import tensorflow as tf
-from keras import callbacks, models, layers, utils, losses, preprocessing, backend
+from keras import callbacks, models, layers, utils, losses, preprocessing
 from sklearn import metrics
 from tensorflow.keras import optimizers
 from datetime import datetime
@@ -134,24 +134,15 @@ class Model:
 	def load_model(self, path=None):
 		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)
 
-	def evaluate(self, predict, name, plot=True, path=None):
+	def evaluate(self, predict, name, path=None):
 		self.load_model(path)
 
 		predictions = np.argmax(self.model.predict(predict), axis=-1)
 		cm = metrics.confusion_matrix(predict.classes, predictions)
-
-		computer.delete_folder(f"./output/{self.name}/{name}")
-		computer.create_folder(f"./output/{self.name}/{name}")
-
-		fig = plt.figure()
 		
 		metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(predict.labels)).plot(cmap=plt.cm.Blues, xticks_rotation=0)
-		plt.savefig(f"./output/{self.name}/{name}/confusion_matrix.png")
-		
-		if plot == False:
-			plt.close(fig)
-		else:
-			plt.show(fig)
+		plt.savefig(f"./output/{self.name}/confusion_matrix_{name}.png")
+		plt.show()
 
 		print(metrics.classification_report(predict.classes, predictions))
 
@@ -160,21 +151,29 @@ class Model:
 		FP = cm[0][1]
 		FN = cm[1][0]
 
+		results = pd.DataFrame(columns=["data", "accuracy", "specificity", "sensitivity", "precision"])
+
 		accuracy = (float(TP + TN) / float(TP + TN + FP + FN))
 		print("Accuracy:", round(accuracy, 4))
-		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Accuracy: {round(accuracy, 4)}")
 
 		specificity = (TN / float(TN + FP))
 		print("Specificity:", round(specificity, 4))
-		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Specificity: {round(specificity, 4)}")
 
 		sensitivity = (TP / float(TP + FN))
 		print("Sensitivity:", round(sensitivity, 4))
-		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Sensitivity: {round(sensitivity, 4)}")
 
 		precision = (TP / float(TP + FP))
 		print("Precision:", round(precision, 4))
-		computer.save_plain(f"./output/{self.name}/{name}/results.txt", f"Precision: {round(precision, 4)}")
+
+		results = results.append({
+			"data": name,
+			"accuracy": accuracy,
+			"specificity": specificity,
+			"sensitivity": sensitivity,
+			"precision": precision
+		}, ignore_index=True)
+
+		results.to_csv(f"./output/{self.name}/results.csv", mode="a", index=False, header=False, sep=";")
 
 	def visualize_heatmap(self, image):
 		img = cv.cvtColor(cv.imread(image.image), cv.COLOR_BGR2RGB).astype("float32") * 1./255
