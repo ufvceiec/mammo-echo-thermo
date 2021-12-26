@@ -4,11 +4,12 @@ import numpy as np
 from keras import preprocessing
 from sklearn import metrics
 from scipy import optimize
+from .Misc import *
 
 class Join():
 	def __init__(self, *models):
 		self.models = models
-		self.weights = None
+		self.weights = [1/len(self.models) for _ in range(len(self.models))]
 
 	def visualize_heatmap(self, image):
 		fig, model_rows = plt.subplots(nrows=len(self.models), ncols=1, constrained_layout=True)
@@ -20,6 +21,8 @@ class Join():
 		gridspec = model_rows[0].get_subplotspec().get_gridspec()
 		model_rows = [fig.add_subfigure(gs) for gs in gridspec]
 
+		weighted_prediction = np.array([])
+
 		for row, model_row in enumerate(model_rows):
 			img = cv.cvtColor(cv.imread(image.image), cv.COLOR_BGR2RGB).astype("float32") * 1./255
 			img = np.expand_dims(img, axis=0)
@@ -27,6 +30,7 @@ class Join():
 			heatmap = self.models[row].compute_heatmap(img)
 			jet_heatmap, superimposed_img = self.models[row].get_heatmap(image.image, heatmap)
 			predicted = self.models[row].model.predict(img)[0]
+			weighted_prediction = np.append(weighted_prediction, predicted[1]*self.weights[row])
 
 			model_row.suptitle(f"Model: {self.models[row].name.title()}")
 
@@ -50,6 +54,8 @@ class Join():
 
 		plt.show()
 
+		print(f"Weights prediction: {np.round(weighted_prediction, 2)} = {np.round(np.sum(weighted_prediction), 2)}")
+
 	def get_weighted_average(self, generator, iterations=1000, tolerance=1e-7):
 		weights = [1/len(self.models) for _ in range(len(self.models))]
 		bound_weights = [(0.0, 1.0)  for _ in range(len(self.models))]
@@ -60,6 +66,8 @@ class Join():
 		weights = self.normalize_weights(result.x)
 
 		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
+
+		computer.save_plain(f"Weights: {np.round(weights, 2)}")
 		
 		self.weights = weights
 
