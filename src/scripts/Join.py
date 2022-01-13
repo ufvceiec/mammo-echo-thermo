@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import cv2 as cv
+import pandas as pd
 import numpy as np
 from keras import preprocessing
 from sklearn import metrics
@@ -60,27 +61,27 @@ class Join():
 		weights = [1/len(self.models) for _ in range(len(self.models))]
 		bound_weights = [(0.0, 1.0)  for _ in range(len(self.models))]
 
-		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
+		print(f"\nWeights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
 
 		result = optimize.differential_evolution(self.loss_function, bounds=bound_weights, args=(generator), maxiter=iterations, tol=tolerance)
 		weights = self.normalize_weights(result.x)
 
 		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
 
-		computer.save_plain(f"Weights: {np.round(weights, 2)}")
+		computer.save_plain(f"./output/weights.txt", weights)
 		
 		self.weights = weights
 
-	def get_accuracy(self, weights, generator):
-		prediction = np.array([model.model.predict(generator) for model in self.models])
+	def get_accuracy(self, models, weights, generator):
+		prediction = np.array([current_model.model.predict(generator) for current_model in models])
 		weighted_prediction = np.tensordot(prediction, weights, axes=((0), (0)))
 
 		return metrics.accuracy_score(generator.labels, np.argmax(weighted_prediction, axis=1))
 
-	def loss_function(self, weights, generator):
+	def loss_function(self, weights, models, generator):
 		normalize = self.normalize_weights(weights)
 
-		return 1.0 - self.get_weighted_average(normalize, generator)
+		return 1.0 - self.get_accuracy(models, normalize, generator)
 
 	def normalize_weights(weights):
 		result = np.linalg.norm(weights, 1)
@@ -89,3 +90,45 @@ class Join():
 			return weights
 
 		return weights/result
+
+	def evaluate(self, generator, name):
+		predictions = np.array([model.model.predict(generator) for model in self.models])
+		weighted_prediction = np.tensordot(predictions, self.weights, axes=((0), (0)))
+		prediction = np.argmax(weighted_prediction, axis=1)
+
+		cm = metrics.confusion_matrix(generator.classes, prediction)
+
+		metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(generator.labels)).plot(cmap=plt.cm.Blues, xticks_rotation=0)
+		plt.savefig(f"./output/confusion_matrix_{name}.png")
+		plt.show()
+
+		print(metrics.classification_report(generator.classes, prediction))
+
+		TP = cm[1][1]
+		TN = cm[0][0]
+		FP = cm[0][1]
+		FN = cm[1][0]
+
+		results = pd.DataFrame(columns=["data", "accuracy", "specificity", "sensitivity", "precision"])
+
+		accuracy = (float(TP + TN) / float(TP + TN + FP + FN))
+		print("Accuracy:", round(accuracy, 4))
+
+		specificity = (TN / float(TN + FP))
+		print("Specificity:", round(specificity, 4))
+
+		sensitivity = (TP / float(TP + FN))
+		print("Sensitivity:", round(sensitivity, 4))
+
+		precision = (TP / float(TP + FP))
+		print("Precision:", round(precision, 4))
+
+		results = results.append({
+			"data": name,
+			"accuracy": accuracy,
+			"specificity": specificity,
+			"sensitivity": sensitivity,
+			"precision": precision
+		}, ignore_index=True)
+
+		results.to_csv(f"./output/results.csv", mode="a", index=False, header=False, sep=";")
