@@ -57,31 +57,36 @@ class Join():
 
 		print(f"Weights prediction: {np.round(weighted_prediction, 2)} = {np.round(np.sum(weighted_prediction), 2)}")
 
-	def get_weighted_average(self, generator, iterations=1000, tolerance=1e-7):
+	def get_weighted_average(self, generator, iterations=1000, tolerance=1e-7, threshold=None):
 		weights = [1/len(self.models) for _ in range(len(self.models))]
 		bound_weights = [(0.0, 1.0)  for _ in range(len(self.models))]
 
-		print(f"\nWeights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
+		print(f"\nWeights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator, threshold), 2)}")
 
-		result = optimize.differential_evolution(self.loss_function, bounds=bound_weights, args=(generator), maxiter=iterations, tol=tolerance)
+		result = optimize.differential_evolution(self.loss_function, bounds=bound_weights, args=(generator, threshold), maxiter=iterations, tol=tolerance)
 		weights = self.normalize_weights(result.x)
 
-		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
+		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator, threshold), 2)}")
 
 		computer.save_plain(f"./output/weights.txt", weights)
 		
 		self.weights = weights
 
-	def get_accuracy(self, models, weights, generator):
+	def get_accuracy(self, models, weights, generator, threshold=None):
 		prediction = np.array([current_model.model.predict(generator) for current_model in models])
 		weighted_prediction = np.tensordot(prediction, weights, axes=((0), (0)))
 
-		return metrics.accuracy_score(generator.labels, np.argmax(weighted_prediction, axis=1))
+		if threshold is None:
+			weighted_predictions = np.argmax(weighted_prediction, axis=1)
+		else:
+			weighted_predictions = list(map((lambda x: 1 if x >= 0.8 else 0), weighted_prediction[:, 1]))
 
-	def loss_function(self, weights, models, generator):
+		return metrics.accuracy_score(generator.labels, weighted_predictions)
+
+	def loss_function(self, weights, models, generator, threshold=None):
 		normalize = self.normalize_weights(weights)
 
-		return 1.0 - self.get_accuracy(models, normalize, generator)
+		return 1.0 - self.get_accuracy(models, normalize, generator, threshold)
 
 	def normalize_weights(weights):
 		result = np.linalg.norm(weights, 1)
