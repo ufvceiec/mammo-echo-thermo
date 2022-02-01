@@ -1,3 +1,4 @@
+from email import generator
 import os
 import pandas as pd
 import numpy as np
@@ -15,6 +16,16 @@ class Data:
 		self.images.category, self.labels = self.images.category.factorize() # Categories are converted to integers and the labels are stored in a dictionary
 		self.images.category = self.images.category.astype(str)
 		self.training, self.test = None, None
+
+	# The images and their categories are loaded into a dataframe
+	def __extract_images(self, path):
+		images = []
+		
+		for category in os.listdir(path):
+			for filename in os.listdir(path + category):
+				images.append([path + category + "/" + filename, category])
+
+		return pd.DataFrame(images, columns=["image", "category"])
 
 	# Split data into train and test
 	def train_test_split(self, test_size=0.15, stratify=False):
@@ -35,14 +46,16 @@ class Data:
 	# Function in charge of generating training and validation images
 	def training_validation_generator(self, n_splits=5):
 		kfold = model_selection.KFold(n_splits=n_splits, shuffle=True, random_state=self.random_state) # Split the data into n_splits folds
-		datagen, generator_properties = self.generator() # Generate the generator and its properties
+		datagen, generator_properties = self.__generator() # Generate the generator and its properties
+
+		generator_list = []
 
 		# For each fold, generate the training and validation images
 		for training_index, validation_index in kfold.split(self.training):
 			training_data = self.training.iloc[training_index]
 			validation_data = self.training.iloc[validation_index]
 
-			train_generator = datagen.flow_from_dataframe(
+			training_generator = datagen.flow_from_dataframe(
 				**generator_properties,
 
 				dataframe=training_data,
@@ -58,11 +71,13 @@ class Data:
 				shuffle=False,
 			)
 
-			yield train_generator, validation_generator
+			generator_list.append((training_generator, validation_generator))
+
+		return generator_list
 
 	# Function in charge of generating test images
 	def test_generator(self):
-		datagen, generator_properties = self.generator() # Generate the generator and its properties
+		datagen, generator_properties = self.__generator() # Generate the generator and its properties
 
 		test_generator = datagen.flow_from_dataframe(
 			**generator_properties,
@@ -74,7 +89,8 @@ class Data:
 
 		return test_generator
 
-	def generator(self):
+	# Function in charge of generating the generator and its properties
+	def __generator(self):
 		datagen = preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 		generator_properties = {
@@ -87,7 +103,9 @@ class Data:
 
 		return datagen, generator_properties
 
-	def detectColor(self, image, lower, upper):
+	# Function in charge of obtaining the activated zones after applying a mask
+	def __detect_color(self, image, lower, upper):
+		# In case of inserting a tensor it is converted into an array of numbers
 		if tf.is_tensor(image):
 			temp_image = image.numpy().copy()
 		else:
@@ -95,27 +113,29 @@ class Data:
 
 		hsv_image = temp_image.copy()
 		hsv_image = cv.cvtColor(hsv_image, cv.COLOR_RGB2HSV)
-		mask = cv.inRange(hsv_image, lower, upper)
+		mask = cv.inRange(hsv_image, lower, upper) # The mask is created using the lower and upper bounds
 
 		result = temp_image.copy()
-		result[np.where(mask == 0)] = 0
+		result[np.where(mask == 0)] = 0 # Non-activated areas are darkened
 		
 		return result
 
-	def getImageTensor(self, images, lower, upper):
+	# Function in charge of returning the images as tensors applying a filter
+	def get_image_tensor(self, images, lower, upper):
 		results = []
 
 		for img in images:
-			results.append(np.expand_dims(self.detectColor(img, lower, upper), axis=0))
+			results.append(np.expand_dims(self.__detect_color(img, lower, upper), axis=0))
 
 		return np.concatenate(results, axis=0)
 
-	def show_images(self, generator, filters, name):
+	# Function in charge of plotting the images
+	def show_images(self, generator, filters, size=3, name="Dataset"):
 		generator.reset()
 
 		img, label = generator.next()
 
-		fig, axs = plt.subplots(nrows=3, ncols=1, constrained_layout=True)
+		fig, axs = plt.subplots(nrows=size, ncols=1, constrained_layout=True)
 		fig.suptitle(name)
 
 		for ax in axs:
@@ -125,9 +145,9 @@ class Data:
 		subfigs = [fig.add_subfigure(gs) for gs in gridspec]
 
 		for row, subfig in enumerate(subfigs):
-			subfig.suptitle(str(self.labels[np.argmax(label[row], axis=-1)]).title())
+			subfig.suptitle(f"Class: {str(self.labels[np.argmax(label[row], axis=-1)]).title()}")
 
-			axs = subfig.subplots(nrows=1, ncols=4)
+			axs = subfig.subplots(nrows=1, ncols=len(filters))
 
 			for col, ax in enumerate(axs):
 				ax.imshow(list(filters.values())[col](img)[row])
@@ -135,12 +155,3 @@ class Data:
 				ax.axis("off")
 				
 				ax.plot()
-
-	def __extract_images(self, path):
-		images = []
-		
-		for category in os.listdir(path):
-			for filename in os.listdir(path + category):
-				images.append([path + category + "/" + filename, category])
-
-		return pd.DataFrame(images, columns=["image", "category"])
