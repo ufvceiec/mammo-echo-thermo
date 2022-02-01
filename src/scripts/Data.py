@@ -9,17 +9,21 @@ from .Misc import *
 
 class Data:
 	def __init__(self, path):
-		self.images = self.__extract_images(path)
-		self.images.category, self.labels = self.images.category.factorize()
+		self.images = self.__extract_images(path) # The paths of the images and their categories are loaded into a dataframe
+		self.images.category, self.labels = self.images.category.factorize() # Categories are converted to integers and the labels are stored in a dictionary
 		self.images.category = self.images.category.astype(str)
+		self.random_state = 42
 		self.training, self.test = None, None
 
-	def train_test_split(self, test_size=0.15, random_state=42, shuffle=True, stratify=False):
+	# Split data into train and test
+	def train_test_split(self, test_size=0.15, random_state=42, stratify=False):
+		self.random_state = random_state
+
 		return model_selection.train_test_split(
 			self.images,
 			test_size=test_size,
 			random_state=random_state,
-			shuffle=shuffle,
+			shuffle=True,
 			stratify=self.images.category if stratify else None
 		)
 
