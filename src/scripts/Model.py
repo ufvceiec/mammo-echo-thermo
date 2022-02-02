@@ -124,49 +124,42 @@ class Model:
 
 		plt.close(fig)
 
+	# Function in charge of loading the best model
 	def load_model(self, path=None):
-		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)
+		self.model.load_weights(f"{self.__path}/best_model.hdf5" if path is None else path)
 
-	def evaluate(self, predict, name, path=None):
-		self.load_model(path)
+	# TODO: Save in a file the accuracy, specificity, sensitivity and precision of the model
+	# Function in charge of evaluating a dataset
+	def evaluate(self, predict, title, path=None):
+		self.load_model(path) # Load the best model
 
+		# Evaluate the model and get the confusion matrix
 		predictions = np.argmax(self.model.predict(predict), axis=-1)
 		cm = metrics.confusion_matrix(predict.classes, predictions)
 		
+		# Plot the confusion matrix
 		metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(predict.labels)).plot(cmap=plt.cm.Blues, xticks_rotation=0)
-		plt.savefig(f"./output/{self.name}/confusion_matrix_{name}.png")
+		plt.savefig(f"{self.__path}/confusion_matrix_{title}.png")
 		plt.show()
 
-		print(metrics.classification_report(predict.classes, predictions))
+		print(metrics.classification_report(predict.classes, predictions, zero_division=0)) # Print the classification report
 
 		TP = cm[1][1]
 		TN = cm[0][0]
 		FP = cm[0][1]
 		FN = cm[1][0]
 
-		results = pd.DataFrame(columns=["data", "accuracy", "specificity", "sensitivity", "precision"])
-
-		accuracy = (float(TP + TN) / float(TP + TN + FP + FN))
+		accuracy = (float(TP + TN)/float(TP + TN + FP + FN))
 		print("Accuracy:", round(accuracy, 4))
 
-		specificity = (TN / float(TN + FP))
+		specificity = (TN/float(TN + FP))
 		print("Specificity:", round(specificity, 4))
 
-		sensitivity = (TP / float(TP + FN))
+		sensitivity = (TP/float(TP + FN))
 		print("Sensitivity:", round(sensitivity, 4))
 
-		precision = (TP / float(TP + FP))
+		precision = (TP/float(TP + FP))
 		print("Precision:", round(precision, 4))
-
-		results = results.append({
-			"data": name,
-			"accuracy": accuracy,
-			"specificity": specificity,
-			"sensitivity": sensitivity,
-			"precision": precision
-		}, ignore_index=True)
-
-		results.to_csv(f"./output/{self.name}/results.csv", mode="a", index=False, header=False, sep=";")
 
 	def visualize_heatmap(self, image):
 		img = cv.cvtColor(cv.imread(image.image), cv.COLOR_BGR2RGB).astype("float32") * 1./255
