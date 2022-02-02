@@ -1,4 +1,3 @@
-from email import generator
 import os
 import pandas as pd
 import numpy as np
@@ -9,8 +8,7 @@ from keras import preprocessing
 from .Misc import *
 
 class Data:
-	def __init__(self, path, random_state=42):
-		self.random_state = random_state
+	def __init__(self, path):
 		self.path = path
 		self.images = self.__extract_images(path) # The paths of the images and their categories are loaded into a dataframe
 		self.images.category, self.labels = self.images.category.factorize() # Categories are converted to integers and the labels are stored in a dictionary
@@ -28,11 +26,11 @@ class Data:
 		return pd.DataFrame(images, columns=["image", "category"])
 
 	# Split data into train and test
-	def train_test_split(self, test_size=0.15, stratify=False):
+	def train_test_split(self, test_size=0.15, random_state=42, stratify=False):
 		return model_selection.train_test_split(
 			self.images,
 			test_size=test_size,
-			random_state=self.random_state,
+			random_state=random_state,
 			shuffle=True,
 			stratify=self.images.category if stratify else None
 		)
@@ -44,8 +42,8 @@ class Data:
 		print(f"{name}: {amount} {np.round(amount/len(data), 2)}")
 
 	# Function in charge of generating training and validation images
-	def training_validation_generator(self, n_splits=5):
-		kfold = model_selection.KFold(n_splits=n_splits, shuffle=True, random_state=self.random_state) # Split the data into n_splits folds
+	def training_validation_generator(self, n_splits=5, random_state=42):
+		kfold = model_selection.KFold(n_splits=n_splits, shuffle=True, random_state=random_state) # Split the data into n_splits folds
 		datagen, generator_properties = self.__generator() # Generate the generator and its properties
 
 		generator_list = []
@@ -96,7 +94,7 @@ class Data:
 		generator_properties = {
 			"x_col": "image",
 			"y_col": "category",
-			"target_size": (215, 538),
+			"target_size": (215, 538), # TODO: Set image size parameters from an external function
 			"color_mode": "rgb",
 			"class_mode": "categorical"
 		}

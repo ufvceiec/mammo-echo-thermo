@@ -11,34 +11,21 @@ from datetime import datetime
 from .Misc import *
 
 class Model:
-	def __init__(self, name, filter, new=True, summary=True, plot=True):
+	def __init__(self, name, subfolder, filter):
 		self.name = name
 		self.filter = filter
-		self.model = self.__create_model()
-		self.weights_path = f"./output/{self.name}/weights_" + "{epoch:03d}" + ".hdf5"
+		self.path = f"./output/{subfolder}/{name}"
+		self.model = self.__create_model() # The neural model is created
+		# self.weights_path = f"./output/{self.name}/weights_" + "{epoch:03d}" + ".hdf5"
 
-		computer.create_folder(f"./output/")
+		computer.create_folder(self.path) # The model folder is created
 		
-		if new == True:
-			computer.delete_folder(f"./output/{self.name}")
-
-		computer.create_folder(f"./output/{self.name}")
-		
-		utils.vis_utils.plot_model(self.model, to_file=f"./output/{self.name}/model.png", show_shapes=True, show_layer_names=True)
-
-		if summary:
-			self.model.summary()
-
-		if plot:
-			plt.imshow(plt.imread(f"./output/{self.name}/model.png"))
-			plt.axis("off")
-
-			plt.show()
+		utils.vis_utils.plot_model(self.model, to_file=f"{self.path}/model.png", show_shapes=True, show_layer_names=True) # Saved model plot
 
 	def __create_model(self):
 		model = models.Sequential()
 
-		model.add(FilterLayer(filter=self.filter, name="filter_layer", input_shape=(215, 538, 3), trainable=False))
+		model.add(FilterLayer(filter=self.filter, name="filter_layer", input_shape=(215, 538, 3), trainable=False)) # TODO: Set image size parameters from an external function
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))

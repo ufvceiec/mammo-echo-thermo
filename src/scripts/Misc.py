@@ -14,17 +14,14 @@ class computer:
 			if input().upper() != "Y":
 				raise SystemExit("Execution of the model has been canceled!")
 
+	# Function in charge of creating a folder in a path
 	def create_folder(path):
 		if not os.path.exists(path):
 			os.makedirs(path)
 
-	def delete_folder(path):
-		if os.path.exists(path):
-			shutil.rmtree(path)
+	# def duplicate_file(source, destination):
+	# 	shutil.copy(source, destination)
 
-	def duplicate_file(source, destination):
-		shutil.copy(source, destination)
-
-	def save_plain(path, content):
-		with open(path, "a") as file:
-			file.write(content + "\n")
+	# def save_plain(path, content):
+	# 	with open(path, "a") as file:
+	# 		file.write(content + "\n")
