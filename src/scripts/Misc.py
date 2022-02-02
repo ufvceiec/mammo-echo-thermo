@@ -19,8 +19,9 @@ class computer:
 		if not os.path.exists(path):
 			os.makedirs(path)
 
-	# def duplicate_file(source, destination):
-	# 	shutil.copy(source, destination)
+	# Function in charge of duplicating a file
+	def duplicate_file(source, destination):
+		shutil.copy(source, destination)
 
 	# def save_plain(path, content):
 	# 	with open(path, "a") as file:

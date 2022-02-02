@@ -11,21 +11,22 @@ from datetime import datetime
 from .Misc import *
 
 class Model:
-	def __init__(self, name, subfolder, filter):
-		self.name = name
+	def __init__(self, path, filter):
 		self.filter = filter
-		self.path = f"./output/{subfolder}/{name}"
+		self.__path = path
 		self.model = self.__create_model() # The neural model is created
-		# self.weights_path = f"./output/{self.name}/weights_" + "{epoch:03d}" + ".hdf5"
 
-		computer.create_folder(self.path) # The model folder is created
+		computer.create_folder(self.__path) # The model folder is created
 		
-		utils.vis_utils.plot_model(self.model, to_file=f"{self.path}/model.png", show_shapes=True, show_layer_names=True) # Saved model plot
+		utils.vis_utils.plot_model(self.model, to_file=f"{self.__path}/model.png", show_shapes=True, show_layer_names=True) # Saved model plot
 
+	# TODO: Apply grid search to find the best parameters
+	# Function in charge of creating the layers of the neural model
 	def __create_model(self):
 		model = models.Sequential()
 
-		model.add(FilterLayer(filter=self.filter, name="filter_layer", input_shape=(215, 538, 3), trainable=False)) # TODO: Set image size parameters from an external function
+		# TODO: Set image size parameters from an external function
+		model.add(FilterLayer(filter=self.filter, name="filter_layer", input_shape=(215, 538, 3), trainable=False))
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))
@@ -41,51 +42,59 @@ class Model:
 
 		return model
 
-	def compile(self):		
-		self.model.compile(loss=losses.binary_crossentropy, optimizer=optimizers.Adam(learning_rate=5*10e-4), metrics=["accuracy"])
+	# Function in charge of compiling the model and saving it
+	def compile(self):
+		# TODO: Apply grid search to find the best parameters
+		self.model.compile(loss=losses.binary_crossentropy, optimizer=optimizers.Adam(learning_rate=5*10e-4), metrics=["accuracy"]) # Compile the model
 
-		with open(f"./output/{self.name}/model.json", "w") as json_file:
+		# Save the model architecture and weights
+		with open(f"{self.__path}/model.json", "w") as json_file:
 			json_file.write(self.model.to_json())
 
-	def fit(self, train_generator, validation_generator, epochs, verbose=True, plot=True):
-		class GetProgress(callbacks.Callback):
-			def __init__(self, name, weights_path):
-				self.name = name
-				self.weights_path = weights_path
-				self.best_accuracy = 0
-				self.best_epoch = 0
-				self.start_time = datetime.now().timestamp()
+	# Function in charge of training the model
+	def fit(self, train_generator, validation_generator, epochs, verbose=True):
+		weighted_path = f"{self.__path}/weights_" + "{epoch:03d}" + ".hdf5"
 
+		# Class in charge of following the training process
+		class GetProgress(callbacks.Callback):
+			def __init__(self, path):
+				self.__path = path
+				self.__best_accuracy = 0
+				self.__best_epoch = 0
+				self.__start_time = datetime.now().timestamp()
+
+			# Function executed every time an epoch completes
 			def on_epoch_end(self, epoch, logs=None):
-				if logs["val_accuracy"] > self.best_accuracy:
-					self.best_accuracy = logs["val_accuracy"]
-					self.best_epoch = epoch + 1
-					computer.duplicate_file(self.weights_path.format(epoch=self.best_epoch), f"./output/{self.name}/best_model.hdf5")
+				# The best model is saved as best_model.hdf5
+				if logs["val_accuracy"] > self.__best_accuracy:
+					self.__best_accuracy = logs["val_accuracy"]
+					self.__best_epoch = epoch + 1
+					computer.duplicate_file(weighted_path.format(epoch=self.__best_epoch), f"{self.__path}/best_model.hdf5")
 
 				print(
-					f"\rModel {self.name} -> " +
+					f"\rModel -> " +
 					f"Epoch {epoch + 1}/{epochs} -> " +
-					f"Accuracy (Validation): {round(logs['val_accuracy'], 2)} (Best: {round(self.best_accuracy, 2)}) -> " +
-					f"{self.weights_path.format(epoch=self.best_epoch)}"
+					f"Accuracy (Validation): {round(logs['val_accuracy'], 2)} (Best: {round(self.__best_accuracy, 2)}) -> " +
+					f"{weighted_path.format(epoch=self.__best_epoch)}"
 				, end="")
 
-				if epoch + 1 >= epochs:
-					print("\n", end="")
-
+			# Function executed when the training process is finished
 			def on_train_end(self, logs=None):
-				print(f"Training finished in {datetime.now().timestamp() - self.start_time} seconds \n")
+				print(f"Training finished in {datetime.now().timestamp() - self.__start_time} seconds \n\n")
 				return super().on_train_end(logs=logs)
 
+		# Callback stores the best model (best validation accuracy)
 		checkpoint = callbacks.ModelCheckpoint(
-			self.weights_path,
+			weighted_path,
 			monitor="val_accuracy",
 			verbose=1 if verbose else 0,
 			save_best_only=True,
 			mode="max"
 		)
 
-		get_progress = GetProgress(self.name, self.weights_path)
+		get_progress = GetProgress(self.__path) # Callback to get the progress
 
+		# Train the model
 		history = self.model.fit(
 			train_generator,
 			epochs=epochs,
@@ -111,12 +120,9 @@ class Model:
 		plt.ylabel("Loss/Accuracy")
 		plt.legend(loc="lower left")
 
-		plt.savefig(f"./output/{self.name}/training_loss_and_accuracy.png")
+		plt.savefig(f"{self.__path}/training_loss_and_accuracy.png") # Save the plot
 
-		if plot == False:
-			plt.close(fig)
-		else:
-			plt.show(fig)
+		plt.close(fig)
 
 	def load_model(self, path=None):
 		self.model.load_weights(f"./output/{self.name}/best_model.hdf5" if path is None else path)

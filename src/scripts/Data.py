@@ -91,10 +91,11 @@ class Data:
 	def __generator(self):
 		datagen = preprocessing.image.ImageDataGenerator(rescale=1./255)
 
+		# TODO: Set image size parameters from an external function
 		generator_properties = {
 			"x_col": "image",
 			"y_col": "category",
-			"target_size": (215, 538), # TODO: Set image size parameters from an external function
+			"target_size": (215, 538),
 			"color_mode": "rgb",
 			"class_mode": "categorical"
 		}
