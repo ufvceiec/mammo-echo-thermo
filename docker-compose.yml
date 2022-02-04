@@ -1,0 +1,19 @@
+version: "2.3"
+
+services:
+  tensorflow:
+    build: .
+    stdin_open: true
+    tty: true
+    network_mode: bridge
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+    volumes:
+      - .:/home/app:rw
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
