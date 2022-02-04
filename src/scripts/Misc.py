@@ -22,7 +22,3 @@ class computer:
 	# Function in charge of duplicating a file
 	def duplicate_file(source, destination):
 		shutil.copy(source, destination)
-
-	# def save_plain(path, content):
-	# 	with open(path, "a") as file:
-	# 		file.write(content + "\n")

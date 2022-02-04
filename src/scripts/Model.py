@@ -80,7 +80,7 @@ class Model:
 
 			# Function executed when the training process is finished
 			def on_train_end(self, logs=None):
-				print(f"Training finished in {datetime.now().timestamp() - self.__start_time} seconds \n\n")
+				print(f"\nTraining finished in {datetime.now().timestamp() - self.__start_time} seconds \n")
 				return super().on_train_end(logs=logs)
 
 		# Callback stores the best model (best validation accuracy)
@@ -161,12 +161,13 @@ class Model:
 		precision = (TP/float(TP + FP))
 		print("Precision:", round(precision, 4))
 
+	# Function in charge of visualizing the model with the corresponding filter
 	def visualize_heatmap(self, image):
 		img = cv.cvtColor(cv.imread(image.image), cv.COLOR_BGR2RGB).astype("float32") * 1./255
 		img = np.expand_dims(img, axis=0)
 
-		heatmap = self.__compute_heatmap(img)
-		jet_heatmap, superimposed_img = self.__get_heatmap(image.image, heatmap)
+		heatmap = self.compute_heatmap(img)
+		jet_heatmap, superimposed_img = self.get_heatmap(image.image, heatmap)
 
 		fig, ax = plt.subplots(1, 3, figsize=(20, 8))
 
@@ -179,6 +180,7 @@ class Model:
 
 		plt.show()
 
+	# Function in charge of computing the heatmap
 	def compute_heatmap(self, image):
 		last_layer = self.model.get_layer(index=2)
 
@@ -196,6 +198,7 @@ class Model:
 
 		return heatmap.numpy()
 
+	# Function in charge of getting the heatmap
 	def get_heatmap(self, path, heatmap):
 		img = preprocessing.image.load_img(path, color_mode="grayscale")
 		img = preprocessing.image.img_to_array(img)
@@ -213,21 +216,24 @@ class Model:
 
 		return jet_heatmap, superimposed_img
 
+# Custom layer in charge of applying a specific filter to the input
 class FilterLayer(layers.Layer):
 	def __init__(self, filter, name="filter_layer", **kwargs):
 		self.filter = filter
 
-		super(FilterLayer, self).__init__(name=name, **kwargs)
+		super(FilterLayer, self).__init__(name=name, **kwargs) # Initialize the layer
 
+	# This function starts when the layer is called
 	def call(self, image):
 		shape = image.shape
-		[image, ] = tf.py_function(self.filter, [image], [tf.float32])
+		[image, ] = tf.py_function(self.filter, [image], [tf.float32]) # Apply the filter
 		image.set_shape(shape)
 		
 		return image
 
+	# This function starts when the layer is built
 	def get_config(self):
 		config = super(FilterLayer, self).get_config()
-		config.update({"filter": self.filter})
+		config.update({"filter": self.filter}) # Add the filter to the config
 		
 		return config
