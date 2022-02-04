@@ -74,17 +74,17 @@ class Join():
 		self.weights = weights
 
 	# Function in charge of executing the accuracy of the models using weights
-	def __get_accuracy(self, models, weights, generator):
-		prediction = np.array([current_model.model.predict(generator) for current_model in models])
+	def __get_accuracy(self, weights, generator):
+		prediction = np.array([current_model.model.predict(generator) for current_model in self.__models])
 		weighted_prediction = np.tensordot(prediction, weights, axes=((0), (0)))
 
 		return metrics.accuracy_score(generator.labels, np.argmax(weighted_prediction, axis=1))
 
 	# Function in charge of computing the loss function
-	def __loss_function(self, weights, models, generator):
+	def __loss_function(self, weights, generator):
 		normalize = self.__normalize_weights(weights)
 
-		return 1.0 - self.__get_accuracy(models, normalize, generator)
+		return 1.0 - self.__get_accuracy(normalize, generator)
 
 	# Function in charge of executing the normalization of the weights
 	def __normalize_weights(weights):
