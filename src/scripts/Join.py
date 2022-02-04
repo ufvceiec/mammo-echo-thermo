@@ -13,6 +13,8 @@ class Join():
 		self.__path = path
 		self.weights = [1/len(self.__models) for _ in range(len(self.__models))] # The weights are evenly distributed among the models
 
+		computer.create_folder(self.__path)
+
 	# Function in charge of visualizing the model with the corresponding filter
 	def visualize_heatmap(self, image):
 		fig, model_rows = plt.subplots(nrows=len(self.__models), ncols=1, constrained_layout=True)
@@ -64,30 +66,30 @@ class Join():
 		weights = [1/len(self.__models) for _ in range(len(self.__models))]
 		bound_weights = [(0.0, 1.0)  for _ in range(len(self.__models))]
 
-		print(f"\nWeights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
+		print(f"\nWeights: {np.round(weights, 2)} -> Accuracy: {np.round(self.__get_accuracy(weights, generator), 2)}")
 
-		result = optimize.differential_evolution(self.loss_function, bounds=bound_weights, args=(self.__models, generator), maxiter=iterations, tol=tolerance)
-		weights = self.normalize_weights(result.x)
+		result = optimize.differential_evolution(self.__loss_function, bounds=bound_weights, args=(self.__models, generator), maxiter=iterations, tol=tolerance)
+		weights = self.__normalize_weights(result.x)
 
-		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.get_accuracy(weights, generator), 2)}")
+		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.__get_accuracy(weights, generator), 2)}")
 		
 		self.weights = weights
 
 	# Function in charge of executing the accuracy of the models using weights
-	def get_accuracy(self, weights, generator):
+	def __get_accuracy(self, weights, generator):
 		prediction = np.array([current_model.model.predict(generator) for current_model in self.__models])
 		weighted_prediction = np.tensordot(prediction, weights, axes=((0), (0)))
 
 		return metrics.accuracy_score(generator.labels, np.argmax(weighted_prediction, axis=1))
 
 	# Function in charge of computing the loss function
-	def loss_function(self, weights, models, generator):
-		normalize = self.normalize_weights(weights)
+	def __loss_function(self, weights, models, generator):
+		normalize = self.__normalize_weights(weights)
 
-		return 1.0 - self.get_accuracy(normalize, generator)
+		return 1.0 - self.__get_accuracy(normalize, generator)
 
 	# Function in charge of executing the normalization of the weights
-	def normalize_weights(self, weights):
+	def __normalize_weights(self, weights):
 		result = np.linalg.norm(weights, 1)
 
 		if result == 0.0:
