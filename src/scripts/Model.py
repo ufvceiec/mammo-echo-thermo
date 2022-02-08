@@ -160,7 +160,7 @@ class Model:
 		precision = (TP/float(TP + FP))
 		print("Precision:", round(precision, 4))
 
-		pd.DataFrame(columns=["dataset", "accuracy", "specificity", "sensitivity", "precision"], data=[[title, accuracy, specificity, sensitivity, precision]]).to_csv(f"{self.__path}/evaluation.csv", index=False, header=False, mode="a")
+		pd.DataFrame(columns=["dataset", "accuracy", "specificity", "sensitivity", "precision"], data=[[title, accuracy, specificity, sensitivity, precision]]).to_csv(f"{self.__path}/evaluation.csv", index=False, header=True, mode="a")
 
 	# Function in charge of visualizing the model with the corresponding filter
 	def visualize_heatmap(self, image):

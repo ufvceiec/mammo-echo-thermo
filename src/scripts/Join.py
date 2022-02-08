@@ -61,6 +61,7 @@ class Join():
 
 		print(f"Weights prediction: {np.round(weighted_prediction, 2)} = {np.round(np.sum(weighted_prediction), 2)}")
 
+	# Function in charge of executing the optimization of the weights
 	def get_weighted_average(self, generator, iterations=1000, tolerance=1e-7):
 		weights = [1/len(self.__models) for _ in range(len(self.__models))]
 		bound_weights = [(0.0, 1.0)  for _ in range(len(self.__models))]
@@ -79,7 +80,7 @@ class Join():
 
 		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.__get_accuracy(weights, generator), 2)}")
 
-		pd.DataFrame(columns=[f"model_{index}" for index in range(len(self.__models))], data=weights).to_csv(f"{self.__path}/weights.csv")
+		pd.DataFrame(columns=[f"model_{index}" for index in range(len(self.__models))], data=weights).to_csv(f"{self.__path}/weights.csv", index=False, header=True, mode="w")
 
 		self.weights = weights
 
@@ -137,4 +138,4 @@ class Join():
 		precision = (TP / float(TP + FP))
 		print("Precision:", round(precision, 4))
 
-		pd.DataFrame(columns=["dataset", "accuracy", "specificity", "sensitivity", "precision"], data=[[title, accuracy, specificity, sensitivity, precision]]).to_csv(f"{self.__path}/evaluation.csv", index=False, header=False, mode="a")
+		pd.DataFrame(columns=["dataset", "accuracy", "specificity", "sensitivity", "precision"], data=[[title, accuracy, specificity, sensitivity, precision]]).to_csv(f"{self.__path}/evaluation.csv", index=False, header=True, mode="a")
