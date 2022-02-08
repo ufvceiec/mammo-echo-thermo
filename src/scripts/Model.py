@@ -128,7 +128,6 @@ class Model:
 	def load_model(self, path=None):
 		self.model.load_weights(f"{self.__path}/best_model.hdf5" if path is None else path)
 
-	# TODO: Save in a file the accuracy, specificity, sensitivity and precision of the model
 	# Function in charge of evaluating a dataset
 	def evaluate(self, predict, title, path=None):
 		self.load_model(path) # Load the best model
@@ -160,6 +159,8 @@ class Model:
 
 		precision = (TP/float(TP + FP))
 		print("Precision:", round(precision, 4))
+
+		pd.DataFrame(columns=["dataset", "accuracy", "specificity", "sensitivity", "precision"], data=[[title, accuracy, specificity, sensitivity, precision]]).to_csv(f"{self.__path}/evaluation.csv", index=False, header=False, mode="a")
 
 	# Function in charge of visualizing the model with the corresponding filter
 	def visualize_heatmap(self, image):
