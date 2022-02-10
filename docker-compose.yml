@@ -16,4 +16,10 @@ services:
       resources:
         reservations:
           devices:
-            - capabilities: [gpu]
+            # # Allow all GPUs
+            # - capabilities: [gpu]
+
+            # Allow some GPUs 
+            - driver: nvidia
+              device_ids: ["3"]
+              capabilities: [gpu]
