@@ -53,8 +53,12 @@ To run this project it is necessary to download this repository. It can be done 
 git clone https://github.com/ufvceiec/mammo-echo-thermo.git
 ```
 
-Once the repository is cloned on your local machine, we must execute the program with the following commands:
+Once the repository is cloned on your local machine, it will be necessary to have Docker installed (if you want to use Docker with GPUs support, use the [the following installation guide](https://github.com/FernandoPerezLara/docker-tensorflow-gpu)).
+
+To execute the program, run the following command:
 ```
 cd mammo-echo-thermo
-python -m pip install -r requirements.txt
+docker-compose up -d
 ```
+
+And then enter inside the container and run the file `main.py`.
