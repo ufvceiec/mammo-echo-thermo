@@ -26,7 +26,7 @@ class Model:
 		model = models.Sequential()
 
 		# TODO: Set image size parameters from an external function
-		model.add(FilterLayer(filter=self.filter, name="filter_layer", input_shape=(215, 538, 3), trainable=False))
+		model.add(FilterLayer(filter=self.filter, name="filter_layer", input_shape=(215, 538, 1), trainable=False))
 
 		model.add(layers.Conv2D(32, (3, 3), activation="relu"))
 		model.add(layers.MaxPooling2D(pool_size=(2, 2)))
