@@ -1,0 +1,6 @@
+dataset,accuracy,specificity,sensitivity,precision
+train_generator,0.8787878787878788,0.9154929577464789,0.8360655737704918,0.8947368421052632
+dataset,accuracy,specificity,sensitivity,precision
+validation_generator,0.9393939393939394,0.9230769230769231,0.95,0.95
+dataset,accuracy,specificity,sensitivity,precision
+test_generator,0.6666666666666666,0.8666666666666667,0.4666666666666667,0.7777777777777778
