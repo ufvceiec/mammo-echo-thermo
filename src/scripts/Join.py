@@ -80,7 +80,7 @@ class Join():
 
 		print(f"Weights: {np.round(weights, 2)} -> Accuracy: {np.round(self.__get_accuracy(weights, generator), 2)}")
 
-		pd.DataFrame(columns=[f"model_{index}" for index in range(len(self.__models))], data=weights).to_csv(f"{self.__path}/weights.csv", index=False, header=True, mode="w")
+		pd.DataFrame(columns=[f"model_{index}" for index in range(len(self.__models))], data=[weights]).to_csv(f"{self.__path}/weights.csv", index=False, header=True, mode="w")
 
 		self.weights = weights
 
